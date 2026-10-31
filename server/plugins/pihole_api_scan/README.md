@@ -9,7 +9,7 @@ The plugin connects to your Pi-hole’s API and retrieves:
 * IP addresses
 * Hostnames (if available)
 * Vendor info
-* Last-seen timestamps
+* Time of the last DNS query
 
 NetAlertX then uses this information to match or create devices in your system.
 
@@ -139,7 +139,7 @@ If names are missing, confirm they appear in Pi-hole’s own UI first.
 
 ### Notes
 
-- Additional notes, limitations, Author info.
+- **Online status comes from DNS activity.** A device counts as online when its last DNS query to Pi-hole is at most `PIHOLEAPI_CONSIDER_ONLINE` seconds old. A device that is on the network but sends no DNS query in that time is not reported as online by this plugin. Pi-hole's per-IP "last seen" value is not used, because Pi-hole keeps refreshing it for as long as it holds the client in memory (about 24 hours in practice), also after the device has left. For quiet devices, also run a presence scanner such as [ARPSCAN](https://docs.netalertx.com/plugins/arp_scan).
 
 - Version: 1.0.0
 - Author: `jokob-sk`, `leiweibau`
