@@ -173,6 +173,13 @@ class TestOnlineFromLastQuery:
         ]
 
 
+def _keep_main_globals(monkeypatch):
+    """Record the module globals main() rebinds, so monkeypatch restores them after the test."""
+    for name in ("PIHOLEAPI_URL", "PIHOLEAPI_PASSWORD", "PIHOLEAPI_API_MAXCLIENTS", "PIHOLEAPI_VERIFY_SSL",
+                 "PIHOLEAPI_RUN_TIMEOUT", "PIHOLEAPI_GET_OFFLINE", "PIHOLEAPI_CONSIDER_ONLINE"):
+        monkeypatch.setattr(pihole_api_scan, name, getattr(pihole_api_scan, name))
+
+
 def _run_main(monkeypatch, devices):
     """Run main() with PIHOLEAPI_GET_OFFLINE on against the given API devices; return add_object() kwargs keyed by (MAC, IP)."""
     # Auth and the devices request are patched below, so main() needs no other settings.
@@ -181,10 +188,7 @@ def _run_main(monkeypatch, devices):
         "PIHOLEAPI_GET_OFFLINE": True,
         "PIHOLEAPI_CONSIDER_ONLINE": 300,
     }
-    # main() rebinds these module globals; record them so monkeypatch restores them.
-    for name in ("PIHOLEAPI_URL", "PIHOLEAPI_PASSWORD", "PIHOLEAPI_API_MAXCLIENTS", "PIHOLEAPI_VERIFY_SSL",
-                 "PIHOLEAPI_RUN_TIMEOUT", "PIHOLEAPI_GET_OFFLINE", "PIHOLEAPI_CONSIDER_ONLINE"):
-        monkeypatch.setattr(pihole_api_scan, name, getattr(pihole_api_scan, name))
+    _keep_main_globals(monkeypatch)
 
     calls = {}
     plugin_objects = MagicMock()
@@ -215,3 +219,26 @@ class TestPresenceFromOnlineState:
             ("f8:01:b4:b4:67:94", "192.168.178.52"): "1",
             ("f8:01:b4:b4:67:94", "192.168.178.53"): "1",
         }
+
+
+class TestVerifySsl:
+    @pytest.mark.parametrize("verify_ssl", [True, False])
+    def test_verify_ssl_setting_reaches_pihole_request(self, monkeypatch, verify_ssl):
+        """The VERIFY_SSL setting (key PIHOLEAPI_VERIFY_SSL) is what main() passes as verify= to the Pi-hole API."""
+        settings = {
+            "PIHOLEAPI_URL": "https://pi.hole/",
+            "PIHOLEAPI_PASSWORD": "secret",
+            "PIHOLEAPI_RUN_TIMEOUT": 30,
+            "PIHOLEAPI_VERIFY_SSL": verify_ssl,
+        }
+        _keep_main_globals(monkeypatch)
+        auth_response = MagicMock()
+        auth_response.json.return_value = {"session": {"valid": False}}
+        post = MagicMock(return_value=auth_response)
+        monkeypatch.setattr(pihole_api_scan, "get_setting_value", settings.get)
+        monkeypatch.setattr(pihole_api_scan.requests, "post", post)
+        monkeypatch.setattr(pihole_api_scan.requests.packages.urllib3, "disable_warnings", MagicMock())
+
+        pihole_api_scan.main()
+
+        assert post.call_args.kwargs["verify"] is verify_ssl
