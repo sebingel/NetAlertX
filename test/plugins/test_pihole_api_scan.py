@@ -124,7 +124,7 @@ class TestOnlineFromLastQuery:
 
         entries = _gather([laptop])
 
-        assert [entry.get("isOnline") for entry in entries] == [True]
+        assert [entry["isOnline"] for entry in entries] == [True]
 
     @pytest.mark.parametrize(
         "last_query, expected_online",
@@ -173,15 +173,12 @@ class TestOnlineFromLastQuery:
         ]
 
 
-def _run_main(monkeypatch, devices, get_offline):
-    """Run main() against the given API devices and return add_object() kwargs keyed by (MAC, IP)."""
+def _run_main(monkeypatch, devices):
+    """Run main() with PIHOLEAPI_GET_OFFLINE on against the given API devices; return add_object() kwargs keyed by (MAC, IP)."""
+    # Auth and the devices request are patched below, so main() needs no other settings.
     settings = {
         "PIHOLEAPI_URL": "http://pi.hole/",
-        "PIHOLEAPI_PASSWORD": "secret",
-        "PIHOLEAPI_API_MAXCLIENTS": 500,
-        "PIHOLEAPI_SSL_VERIFY": False,
-        "PIHOLEAPI_RUN_TIMEOUT": 30,
-        "PIHOLEAPI_GET_OFFLINE": get_offline,
+        "PIHOLEAPI_GET_OFFLINE": True,
         "PIHOLEAPI_CONSIDER_ONLINE": 300,
     }
     # main() rebinds these module globals; record them so monkeypatch restores them.
@@ -211,7 +208,7 @@ class TestPresenceFromOnlineState:
         phone = _api_device("0a:60:b8:ad:b6:9d", ["192.168.178.64"], last_query=1793456269, last_seen=1793477100)
         tv = _api_device("f8:01:b4:b4:67:94", ["192.168.178.52", "192.168.178.53"], last_query=1793477050, last_seen=1793477100)
 
-        calls = _run_main(monkeypatch, [phone, tv], get_offline=True)
+        calls = _run_main(monkeypatch, [phone, tv])
 
         assert {key: kwargs.get("helpVal4") for key, kwargs in calls.items()} == {
             ("0a:60:b8:ad:b6:9d", "192.168.178.64"): "0",
