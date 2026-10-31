@@ -97,7 +97,7 @@ def _gather(devices, get_offline=False, consider_online=300):
     """Run gather_device_entries() against the given API devices and plugin settings."""
     with patch.object(pihole_api_scan, "get_pihole_network_devices", return_value=devices), \
             patch.object(pihole_api_scan, "PIHOLEAPI_GET_OFFLINE", get_offline), \
-            patch.object(pihole_api_scan, "PIHOLEAPI_CONSIDER_ONLINE", consider_online, create=True), \
+            patch.object(pihole_api_scan, "PIHOLEAPI_CONSIDER_ONLINE", consider_online), \
             patch.object(pihole_api_scan, "PIHOLEAPI_FAKE_MAC", False):
         return pihole_api_scan.gather_device_entries()
 
@@ -184,7 +184,7 @@ def _run_main(monkeypatch, devices):
     # main() rebinds these module globals; record them so monkeypatch restores them.
     for name in ("PIHOLEAPI_URL", "PIHOLEAPI_PASSWORD", "PIHOLEAPI_API_MAXCLIENTS", "PIHOLEAPI_VERIFY_SSL",
                  "PIHOLEAPI_RUN_TIMEOUT", "PIHOLEAPI_GET_OFFLINE", "PIHOLEAPI_CONSIDER_ONLINE"):
-        monkeypatch.setattr(pihole_api_scan, name, getattr(pihole_api_scan, name, None), raising=False)
+        monkeypatch.setattr(pihole_api_scan, name, getattr(pihole_api_scan, name))
 
     calls = {}
     plugin_objects = MagicMock()
