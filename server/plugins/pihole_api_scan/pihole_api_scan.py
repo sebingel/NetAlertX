@@ -229,7 +229,9 @@ def gather_device_entries():
 
         # 2. Skip if offline (and user doesn't want offline devices)
         if not is_online and not PIHOLEAPI_GET_OFFLINE:
-            mylog('verbose', [f'[{pluginName}] Not online in the last {PIHOLEAPI_CONSIDER_ONLINE}s, import of offline disabled (PIHOLEAPI_GET_OFFLINE) skipping device: {device}.'])
+            query_age = f'{now_ts - last_query}s ago' if last_query > 0 else 'never'
+            mylog('verbose', [f'[{pluginName}] Skipping offline device {hwaddr}: last DNS query {query_age}, '
+                              f'PIHOLEAPI_CONSIDER_ONLINE={PIHOLEAPI_CONSIDER_ONLINE}s, PIHOLEAPI_GET_OFFLINE disabled.'])
             continue
 
         mac_vendor = device.get('macVendor', '')
