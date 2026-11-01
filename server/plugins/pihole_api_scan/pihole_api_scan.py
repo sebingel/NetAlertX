@@ -202,8 +202,6 @@ def get_pihole_network_devices():
 # ------------------------------------------------------------------
 def is_device_online(last_query, now_ts, consider_online):
     """Return True if last_query (Unix seconds of the device's last DNS query, 0 = never) is at most consider_online seconds old."""
-    # ips[].lastSeen is not used: FTL refreshes it for every client it still
-    # holds in memory, even when the client is not in the ARP cache.
     return last_query > 0 and (now_ts - last_query) <= consider_online
 
 
@@ -228,7 +226,9 @@ def gather_device_entries():
         if not device_ips:
             continue
 
-        # 1. Determine online status from the device's last DNS query
+        # 1. Determine online status from the device's last DNS query. ips[].lastSeen is not
+        #    used: FTL refreshes it for every client it still holds in memory, even when the
+        #    client is not in the ARP cache.
         last_query = device.get('lastQuery', 0)
         is_online = is_device_online(last_query, now_ts, PIHOLEAPI_CONSIDER_ONLINE)
 
